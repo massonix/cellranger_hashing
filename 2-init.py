@@ -67,7 +67,7 @@ for iden in sample_ids:
     print(lims_sub)
     library = lims_sub.loc[lims_sub.index[0], "library"]
     index = lims_sub.loc[lims_sub.index[0], "index"]
-    if "IlluminaTruSeq" in index:
+    if "Illumina" in index:
         library_type = "HTO"
         library_type_feat = "Antibody Capture"
     else:
