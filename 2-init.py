@@ -36,11 +36,11 @@ options = parser.parse_args()
 
 # Read the lims output table and the hashtag references
 if options.verbose:
-    sys.stderr.write("Reading hashtag-condition correspondence Excel file...")
+    sys.stderr.write("Reading hashtag-condition correspondence Excel file...\n")
 lims = pd.read_csv("info.txt", sep = "\t", header = 0)
 hash_xls = pd.ExcelFile("{}_hashing_summary.xlsx".format(options.subproject))
 if options.verbose:
-    sys.stderr.write("Excel successfully read!")
+    sys.stderr.write("Excel successfully read!\n")
 
 
 # Define important paths and directories
@@ -53,13 +53,13 @@ elif reference == "mouse":
 if not os.path.exists("jobs"):
     os.mkdir("jobs")
 if options.verbose:
-    sys.stderr.write("The {} reference annotation will be retrieved from {}".format(reference, ref_path))
+    sys.stderr.write("The {} reference annotation will be retrieved from {}\n".format(reference, ref_path))
 
 # Create cellranger-friendly symmlinks to fastq files
 sample_ids = np.unique(lims["SampleName"])
 for iden in sample_ids:
     if options.verbose:
-        sys.stderr.write("Current library is {}".format(iden))
+        sys.stderr.write("Current library is {}\n".format(iden))
 
     # Define and create directories
     cwd = os.getcwd()
@@ -70,7 +70,7 @@ for iden in sample_ids:
     output_dir = "{}/output".format(jobs_dir)
     dirs_to_create = [jobs_dir, fastq_dir, output_dir]
     if options.verbose:
-        sys.stderr.write("The directories to create are {}".format(dirs_to_create))
+        sys.stderr.write("The directories to create are {}\n".format(dirs_to_create))
     for new_dir in dirs_to_create:
         if not os.path.exists(new_dir):
             os.mkdir(new_dir)
@@ -87,7 +87,7 @@ for iden in sample_ids:
     fastq_subdir = "{}/{}".format(fastq_dir, library_type)
     if not os.path.exists(fastq_subdir):
         if options.verbose:
-            sys.stderr.write("Created the directory {}".format(fastq_subdir))
+            sys.stderr.write("Created the directory {}\n".format(fastq_subdir))
         os.mkdir(fastq_subdir)
 
     # Fastq files are under /project/production/fastq/FC/Lane/fastq/FC_Lane_Index_1/2.fastq.gz
@@ -96,7 +96,7 @@ for iden in sample_ids:
     if count_id > 1:
         # Concatenates fastq files from same sample but in different flow cells and/or lanes
         if options.verbose:
-            sys.stderr.write("Concatenating fastq files...")
+            sys.stderr.write("Concatenating fastq files...\n")
         fc_lane_list = [(lims_sub["flowcell"][x], lims_sub["lane"][x]) for x in lims_sub.index]
         fastq_path_list_r1 = ["{}/{}/{}/fastq/{}_{}_{}_1.fastq.gz".format(fastq_path, fc, lane, fc, lane, index) for fc, lane in fc_lane_list]
         fastq_path_list_r2 = ["{}/{}/{}/fastq/{}_{}_{}_2.fastq.gz".format(fastq_path, fc, lane, fc, lane, index) for fc, lane in fc_lane_list]
@@ -118,7 +118,7 @@ for iden in sample_ids:
 
     # Create the libraries.csv file, which will specifies cellranger the fastq directory and the type of library (HTO or cDNA)
     if options.verbose:
-        sys.stderr.write("Writing libraries.csv file...")
+        sys.stderr.write("Writing libraries.csv file...\n")
     if not os.path.exists("jobs/{}/libraries.csv".format(iden_dir)):
         lib_csv = open("{}/libraries.csv".format(jobs_dir), "w")
         lib_csv_str = "fastqs,sample,library_type\n{},{},{}\n".format(fastq_subdir, iden, library_type_feat)
@@ -132,13 +132,13 @@ for iden in sample_ids:
     
     # Create the feature reference csv file to identify each hashtag with each experimental condition
     if options.verbose:
-        sys.stderr.write("Writing feature_reference.csv file...")
+        sys.stderr.write("Writing feature_reference.csv file...\n")
     hash_xls_iden = hash_xls.parse(iden_dir)
     hash_xls_iden.to_csv("{}/feature_reference.csv".format(jobs_dir), sep = ",", index_label = False, index = False)
     
     # Create job script with the call to cellranger
     if options.verbose:
-        sys.stderr.write("Creating job script...")
+        sys.stderr.write("Creating job script...\n")
     job_script_file = open("{}/{}.cmd".format(jobs_dir, iden_dir), "w")
     job_script = """#!/bin/bash 
 
@@ -157,4 +157,4 @@ module load lims/1.2
     job_script_file.close()
 
 if options.verbose:
-    sys.stderr.write("File system successfully initialized!")
+    sys.stderr.write("File system successfully initialized!\n")
