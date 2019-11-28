@@ -13,6 +13,7 @@ import os
 import argparse
 import subprocess
 import re
+import sys
 
 # Define command-line arguments
 parser = argparse.ArgumentParser(description = "options to initialize the filesystem and scripts of this project")
