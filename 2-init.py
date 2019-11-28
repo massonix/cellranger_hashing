@@ -157,4 +157,4 @@ module load lims/1.2
     job_script_file.close()
 
 if options.verbose:
-    sys.stderr.write("File system successfully initialized!\n")
+    sys.stderr.write("File system initialized successfully!\n")
