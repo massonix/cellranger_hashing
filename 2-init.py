@@ -52,7 +52,7 @@ elif reference == "mouse":
 if not os.path.exists("jobs"):
     os.mkdir("jobs")
 if options.verbose:
-    sys.stderr.write("The {} reference annotation will be retrieved from {}".format(reference, ref_path)
+    sys.stderr.write("The {} reference annotation will be retrieved from {}".format(reference, ref_path))
 
 # Create cellranger-friendly symmlinks to fastq files
 sample_ids = np.unique(lims["SampleName"])
