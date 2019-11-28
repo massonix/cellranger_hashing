@@ -63,7 +63,7 @@ for iden in sample_ids:
 
     # Define and create directories
     cwd = os.getcwd()
-    regex = re.compile("(_cDNA$|_HTO$|_cDNA_|_HTO_)")
+    regex = re.compile("(_cDNA$|_HTO$||_HTO)")
     iden_dir = regex.sub("", iden)
     jobs_dir = "{}/jobs/{}".format(cwd, iden_dir)
     fastq_dir = "{}/fastq".format(jobs_dir)
