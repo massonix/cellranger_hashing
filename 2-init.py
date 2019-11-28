@@ -70,7 +70,7 @@ for iden in sample_ids:
     output_dir = "{}/output".format(jobs_dir)
     dirs_to_create = [jobs_dir, fastq_dir, output_dir]
     if options.verbose:
-        sys.stderrr.write("The directories to create are {}".format(dirs_to_create))
+        sys.stderr.write("The directories to create are {}".format(dirs_to_create))
     for new_dir in dirs_to_create:
         if not os.path.exists(new_dir):
             os.mkdir(new_dir)
