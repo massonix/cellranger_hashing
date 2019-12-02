@@ -1,0 +1,155 @@
+---
+title: "Hashtag Demultiplexing"
+author: "Ramon Massoni-Badosa"
+date: "7/19/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Intoduction
+
+In this project, we aim to create a tonsil and lymph node cell atlas in the context of [The Human Cell Atlas](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5762154/pdf/elife-27041.pdf). To detect doublets, we used the [cell hashing protocol](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-018-1603-1), in which each condition (in our case batches) is labeled with an antibody against ubiquitous cell surface markers that is crosslinked with a sample-specific hashtag oligonucleotide (HTO), that is sequenced together with the cDNA libraries. 
+
+The advantage of this technique is that we can detect as doublets those barcodes that are classified in >1 condition. Thus, this allows us to sequence more cells and get more data per sequencing run. The objective of this notebook is to demultiplex the barcodes (cells) back to its original batch.
+
+## Load packages
+
+```{r}
+library(scater)
+library(SingleCellExperiment)
+library(Seurat)
+library(Matrix)
+library(tidyverse)
+```
+
+# Demultiplexing
+We have 2 libraries, one one that was FACS sorted with CD19+ cells (TonsilCD19_hashing, marker of the B cell lineage), and one that was not FACS sorted (Tonsil_hashing). For each of them, we have 3 files: the expression matrix in sparse format, the list of the barcodes that identify the columns, and the list of genes that identify the rows (features). Moreover, the features file contains a column that distinguishes between genes ("Gene Expression") and HTO ("Antibody Capture"). 
+
+To demultiplex, we will follow [the pipeline from Seurat](https://satijalab.org/seurat/v3.0/hashing_vignette.html):
+
+```{r}
+date <- Sys.Date()
+
+# Load expression matrix, gene and cell metadata
+libraries <- c("Tonsil_hashing", "TonsilCD19_hashing")
+tonsil_list <- list()
+
+for (lib in libraries) {
+  lib_path <- str_c("data/", lib, "/filtered_feature_bc_matrix/")
+  expression_matrix <- readMM(str_c(lib_path, "matrix.mtx.gz"))
+  barcodes <- read_csv(str_c(lib_path, "barcodes.tsv.gz"), col_names = FALSE)
+  colnames(barcodes) <- "barcode"
+  features <- read_tsv(str_c(lib_path, "features.tsv.gz"), col_names = FALSE)
+  colnames(features) <- c("ensembl", "symbol", "feature_type")
+  features$ensembl <- str_remove(features$ensembl, "Tonsil")
+  features$ensembl <- str_remove(features$ensembl, "hashing")
+  features$symbol <- str_remove(features$symbol, "Tonsil")
+  features$symbol <- str_remove(features$symbol, "hashing")
+  rownames(expression_matrix) <- features$symbol
+  colnames(expression_matrix) <- barcodes$barcode
+  
+  # Separate HTO and RNA matrices
+  hto_ind <- which(str_detect(features$feature_type, "Antibody Capture"))
+  rna_ind <- which(str_detect(features$feature_type, "Gene Expression"))
+  tonsil_hto <- expression_matrix[hto_ind, ]
+  tonsil_rna <- expression_matrix[rna_ind, ]
+  
+  # Setup Seurat object
+  tonsil <- CreateSeuratObject(counts = tonsil_rna)
+  
+  # Normalize RNA data with log normalization
+  tonsil <- NormalizeData(tonsil)
+  
+  # Find and scale variable features
+  tonsil <- FindVariableFeatures(tonsil, selection.method = "vst")
+  tonsil <- ScaleData(tonsil, features = VariableFeatures(tonsil))
+  
+  # Add HTO as an independent assay
+  tonsil[["HTO"]] <- CreateAssayObject(counts = tonsil_hto)
+  tonsil <- NormalizeData(tonsil, assay = "HTO", normalization.method = "CLR")
+  
+  # Demultiplex
+  tonsil <- HTODemux(tonsil, assay = "HTO", positive.quantile = 0.99)
+  
+  # Append to list of Seurat objects
+  tonsil_list[[lib]] <- tonsil
+}
+```
+
+We can visualize the results as ridge plots or heatmaps:
+
+```{r}
+table(tonsil$HTO_classification.global)
+ridge_l <- map(tonsil_list, function(tonsil) {
+  Idents(tonsil) <- "HTO_maxID"
+  RidgePlot(
+    object = tonsil, 
+    assay = "HTO", 
+    features = rownames(tonsil[["HTO"]])[1:7], 
+    ncol = 4, 
+    nrow = 2
+  )
+})
+ridge_l
+heatmap_l <- map(tonsil_list, function(tonsil) {
+  HTOHeatmap(tonsil, assay = "HTO", ncells = 5000)
+})
+heatmap_l
+
+# Save
+walk2(ridge_l, names(ridge_l), function(ridge, lib) {
+  ggsave(
+    filename = str_c("results/plots/", date, "_", lib, "_hashtag_demux_ridge.pdf"),
+    plot = ridge, 
+    height = 9, 
+    width = 16
+  )
+})
+walk2(heatmap_l, names(heatmap_l), function(heat, lib) {
+  ggsave(
+    filename = str_c("results/plots/", date, "_", lib, "_hashtag_demux_heatmap.pdf"), 
+    plot = heat,
+    height = 4, 
+    width = 7
+  )
+})
+```
+
+As we can see, there is a decent signal-to-noise ratio for every HTO. Furthermore, the proportion of each batch is evenly distributed, which eases the detection of heterotypic doublets. However, we observe a high proportion of doublets, especially for Tonsil_hashing library. Thus, it is likely that we would achieve similar cell numbers without hashing.
+
+We can generate a two dimensional tSNE embedding for HTOs, grouping cells in singlets and doublets:
+
+```{r}
+# Remove negative cells from the object
+tonsil_list <- map(tonsil_list, subset, idents = "Negative", invert = TRUE)
+
+# Calculate a distance matrix using HTO
+hto_dist_mtx <- map(tonsil_list, function(tonsil) {
+  as.matrix(dist(t(GetAssayData(object = tonsil, assay = "HTO"))))
+})
+
+# Calculate tSNE embeddings with a distance matrix
+tonsil_list <- map2(tonsil_list, hto_dist_mtx, function(tonsil, dist_mat) {
+  RunTSNE(tonsil, distance.matrix = dist_mat, perplexity = 100)
+})
+tsnes_doublets <- map(tonsil_list, DimPlot)
+tsnes_doublets
+```
+
+
+# Save demultiplexed Seurat objects
+
+```{r}
+saveRDS(tonsil_list$Tonsil_hashing, "results/R_objects/Tonsil_hashing_Seurat_demultiplexed.rds")
+saveRDS(tonsil_list$TonsilCD19_hashing, "results/R_objects/TonsilCD19_hashing_Seurat_demultiplexed.rds")
+```
+
+# Session Info
+
+```{r}
+sessionInfo()
+```
+
