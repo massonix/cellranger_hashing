@@ -6,7 +6,7 @@ import argparse
 import subprocess
 
 # Define command-line arguments
-parser = argparse.ArgumentParser(description = "options to transfer feature-barcodes matrices from cluster to lcal")
+parser = argparse.ArgumentParser(description = "options to transfer feature-barcodes matrices from cluster to local")
 parser.add_argument("-l", "--libraries",
 		    dest = "libraries",
 		    action = "store",
