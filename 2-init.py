@@ -14,6 +14,7 @@ import argparse
 import subprocess
 import re
 import sys
+import config as cfg
 
 # Define command-line arguments
 parser = argparse.ArgumentParser(description = "options to initialize the filesystem and scripts of this project")
@@ -21,12 +22,12 @@ parser.add_argument("--reference",
 		    dest = "reference",
 		    action = "store",
 		    default = None,
-		    help = "Reference genome to use (human or mouse")
+		    help = "Reference genome to use (human or mouse)")
 parser.add_argument("--subproject",
 		    dest = "subproject",
 		    action = "store",
 		    default = None,
-		    help = "Subproject we are working on (i.e. BCLLATLAS_10") 
+		    help = "Subproject we are working on (i.e. BCLLATLAS_10)") 
 parser.add_argument("--verbose",
                     dest = "verbose",
                     action = "store_true",
@@ -47,9 +48,9 @@ if options.verbose:
 fastq_path = "/project/production/fastq"
 reference = options.reference
 if reference == "human":
-    ref_path = "/scratch/devel/rmassoni/reference/human/refdata-cellranger-GRCh38-3.0.0/"
+    ref_path = cfg.Hsap
 elif reference == "mouse":
-    ref_path = "/scratch/devel/rmassoni/reference/mouse/refdata-cellranger-mm10-3.0.0"
+    ref_path = cfg.Mmus
 if not os.path.exists("jobs"):
     os.mkdir("jobs")
 if options.verbose:
@@ -63,7 +64,7 @@ for iden in sample_ids:
 
     # Define and create directories
     cwd = os.getcwd()
-    regex = re.compile("(_cDNA$|_HTO$||_HTO)")
+    regex = re.compile("(_cDNA$|_HTO$|_HTO)")
     iden_dir = regex.sub("", iden)
     jobs_dir = "{}/jobs/{}".format(cwd, iden_dir)
     fastq_dir = "{}/fastq".format(jobs_dir)
@@ -148,11 +149,12 @@ for iden in sample_ids:
 # @ cpus_per_task = 12 
 # @ wall_clock_limit = 16:00:00 
 
+
 module load PYTHON/2.7.5 
 module load lims/1.2 
 
-/scratch/devel/rmassoni/cellranger-3.0.2/cellranger count --libraries libraries.csv --feature-ref feature_reference.csv --id {} --chemistry SC3Pv3 --expect-cells 5000 --localcores 12 --localmem 64 --transcriptome {};
-    """.format(iden_dir, iden_dir, iden_dir, ref_path)
+{} count --libraries libraries.csv --feature-ref feature_reference.csv --id {} --chemistry SC3Pv3 --expect-cells 5000 --localcores 12 --localmem 64 --transcriptome {};
+    """.format(iden_dir, iden_dir, cfg.cellranger_path, iden_dir, ref_path)
     job_script_file.write(job_script)
     job_script_file.close()
 
