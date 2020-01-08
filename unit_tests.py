@@ -52,22 +52,22 @@ def feat_ref_columns(df):
     # Are the first two columns equal?
     col1 = np.array(df[["id"]])
     col2 = np.array(df[["name"]])
-    if np.sum(col1 == col2) != df.shape[1]:
+    if np.sum(col1 == col2) != df.shape[0]:
         return False
     
     # Is the hashtag located in read 2?
     col3 = np.array(df[["read"]])
-    if np.sum(col3 == "R2") != df.shape[1]:
+    if np.sum(col3 == "R2") != df.shape[0]:
         return False
     
     # Does the 4rt column contain the pattern ^(BC)?
     col4 = np.array(df[["pattern"]])
-    if np.sum(col4 == "^(BC)") != df.shape[1]:
+    if np.sum(col4 == "^(BC)") != df.shape[0]:
         return False
 
     # Does the last column contain "Antibody Capture"?
     col6 = np.array(df[["feature_type"]])
-    if np.sum(col6 == "Antibody Capture") != df.shape[1]:
+    if np.sum(col6 == "Antibody Capture") != df.shape[0]:
         return False
     else:
         return True
