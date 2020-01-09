@@ -7,6 +7,7 @@ import pandas as pd
 import os
 from os.path import isfile, join 
 
+
 # Define unit tests as single functions
 def feat_ref_ncols(df):
     """Tests if feature_reference.csv contains 6 columns.
@@ -201,3 +202,19 @@ def fastq_lines(lims):
             return True
         else:
             return False
+
+def special_char(lims):
+    """Tests if sample ids do not contain special characters
+    
+    Args:
+      lims: pandas dataframe with the information of the lims for that subproject.
+    
+    Returns:
+      True if the sample ids do not contain special characters.
+    """
+    chars = string.punctuation.replace("-", "").replace("_", " ")
+    tests = [any(char in chars for char in x) for x in lims["SampleName"]]
+    if np.sum(tests) == 0:
+        return True
+    else:
+        return False

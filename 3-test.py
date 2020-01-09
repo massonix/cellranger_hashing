@@ -8,11 +8,17 @@ import pandas as pd
 from unit_tests import *
 import subprocess
 
+
 # Get all library ids
 libraries = os.listdir("jobs")
-    
-# For each library, run the unit tests and save the results in tests.out
+
+# Unit test on info.txt
 f = open("tests.out", "a")
+lims = pd.read_csv("info.txt", sep = "\t", header = 0)
+special_chars = "Do the sample ids contain special characters".format(special_char(lims))
+f.writelines([special_chars])
+
+# For each library, run the unit tests and save the results in tests.out
 for lib in libraries:
     f.write("\nRunning unit tests on the library: {}\n".format(lib))
     
@@ -39,7 +45,6 @@ for lib in libraries:
     f.writelines([dirs, files])
 
 # Unit tests on fastq file concatenation
-lims = pd.read_csv("info.txt", sep = "\t", header = 0)
 f.write("\n\nTests on fastq file concatenation\n")
 fastq = "Do the number of files of the original and concatenated fastq files match? {}\n".format(fastq_lines(lims))
 f.write(fastq)
