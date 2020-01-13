@@ -45,7 +45,9 @@ for lib in libraries:
     f.writelines([dirs, files])
 
 # Unit tests on fastq file concatenation
-f.write("\n\nTests on fastq file concatenation\n")
+f.write("\n\nTests on fastq file existance & concatenation\n")
+fatq_ex = "Do the all the fastqs exist? {}\n".format(fastq_exist(lims))
+f.write(fastq_ex)
 fastq = "Do the number of files of the original and concatenated fastq files match? {}\n".format(fastq_lines(lims))
 f.write(fastq)
 f.close()

@@ -203,6 +203,26 @@ def fastq_lines(lims):
         else:
             return False
 
+def fastq_exist(lims):
+    """Tests if all the fastqs exist.
+    
+    Args:
+      lims: pandas dataframe with the information of the lims for that subproject.
+    
+    Returns:
+      True if the fastqs exist, false otherwise.
+    """
+    fastq_path = "/project/production/fastq"
+    fc_lane_ind_list = [(lims["flowcell"][x], lims["lane"][x], lims["index"][x]) for x in lims.index]
+    fastq_path_list_r1 = ["{}/{}/{}/fastq/{}_{}_{}_1.fastq.gz".format(fastq_path, fc, lane, fc, lane, ind) for fc, lane, ind in fc_lane_ind_list]
+    fastq_path_list_r2 = ["{}/{}/{}/fastq/{}_{}_{}_2.fastq.gz".format(fastq_path, fc, lane, fc, lane, ind) for fc, lane, ind in fc_lane_ind_list]
+    test_r1 = np.sum([os.path.isfile(x) for x in fastq_path_list_r1]) == lims.shape[0]
+    test_r2 = np.sum([os.path.isfile(x) for x in fastq_path_list_r2]) == lims.shape[0]
+    if test_r1 and test_r2:
+        return True
+    else:
+        return False
+
 def special_char(lims):
     """Tests if sample ids do not contain special characters
     
